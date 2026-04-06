@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+langchain
+langchain-google-genai
+chromadb
+pypdf2
+sentence-transformers
+pydantic

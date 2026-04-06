@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نماء | مركز التحليلات والبيانات</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #050B14;
+            --panel-bg: #0A1526;
+            --border-color: #1A2C4D;
+            --accent-green: #00FF88;
+            --accent-blue: #00D2FF;
+            --accent-purple: #B088FF;
+            --text-main: #E2E8F0;
+            --text-muted: #64748B;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            background-image: radial-gradient(circle at 100% 0%, rgba(0, 210, 255, 0.05), transparent 50%);
+        }
+
+        .container { max-width: 1440px; margin: 0 auto; }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 30px;
+        }
+        header h1 { margin: 0; font-weight: 900; letter-spacing: 1px; color: var(--text-main); }
+        header span { color: var(--accent-blue); }
+
+       
+        .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+        .kpi-card {
+            background: var(--panel-bg); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 25px; text-align: center;
+            position: relative; overflow: hidden;
+        }
+        .kpi-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+        }
+        .kpi-card.green::before { background: var(--accent-green); }
+        .kpi-card.blue::before { background: var(--accent-blue); }
+        .kpi-card.purple::before { background: var(--accent-purple); }
+        
+        .kpi-title { color: var(--text-muted); font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+        .kpi-value { font-size: 2.5rem; font-weight: 900; }
+        .green .kpi-value { color: var(--accent-green); }
+        .blue .kpi-value { color: var(--accent-blue); }
+        .purple .kpi-value { color: var(--accent-purple); }
+
+       
+        .content-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+        
+        .panel {
+            background: var(--panel-bg); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 25px;
+        }
+        .panel-title { color: var(--text-main); font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;}
+
+       
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 15px; text-align: right; border-bottom: 1px solid var(--border-color); font-size: 0.95rem; }
+        th { color: var(--accent-blue); font-weight: 700; background: rgba(0, 210, 255, 0.05); }
+        tr:hover { background: rgba(255, 255, 255, 0.02); }
+        td.date { color: var(--text-muted); font-size: 0.85rem; direction: ltr; text-align: right;}
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div>
+            <h1>نماء | <span>مركز التحليلات الاستراتيجية</span></h1>
+            <div style="color: var(--text-muted); font-size: 0.9rem; margin-top: 5px;">مراقبة تفاعلات المزارعين وتحليل البيانات المدخلة</div>
+        </div>
+        <a href="/" style="color: var(--accent-green); text-decoration: none; border: 1px solid var(--accent-green); padding: 10px 20px; border-radius: 8px; font-weight: bold;">⬅ العودة للوحة التحكم</a>
+    </header>
+
+    <div class="kpi-grid">
+        <div class="kpi-card green">
+            <div class="kpi-title">استشارات اليوم</div>
+            <div class="kpi-value" id="kpi-today">0</div>
+        </div>
+        <div class="kpi-card blue">
+            <div class="kpi-title">استشارات هذا الشهر</div>
+            <div class="kpi-value" id="kpi-month">0</div>
+        </div>
+        <div class="kpi-card purple">
+            <div class="kpi-title">إجمالي الاستفسارات المسجلة</div>
+            <div class="kpi-value" id="kpi-total">0</div>
+        </div>
+    </div>
+
+    <div class="content-grid">
+        <div class="panel">
+            <div class="panel-title">📊 تحليل اهتمامات المزارعين</div>
+            <canvas id="topicsChart" height="250"></canvas>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">📋 السجل اللحظي للعمليات (Live Logs)</div>
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table id="logsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">التاريخ والوقت</th>
+                            <th style="width: 40%;">المدخلات (الاستفسار والطقس)</th>
+                            <th style="width: 40%;">قرار الذكاء الاصطناعي</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    Chart.defaults.color = '#64748B';
+    Chart.defaults.font.family = 'Tajawal';
+
+    async function fetchAnalytics() {
+        try {
+            const response = await fetch('/api/logs');
+            const data = await response.json();
+            const logs = data.logs;
+
+            
+            const today = new Date().toISOString().split('T')[0];
+            const currentMonth = today.substring(0, 7); // yyyy-mm
+            
+            let todayCount = 0;
+            let monthCount = 0;
+            
+           
+            let cropsCount = { "القمح": 0, "الطماطم": 0, "الموالح": 0, "أخرى": 0 };
+
+            const tbody = document.querySelector('#logsTable tbody');
+            tbody.innerHTML = '';
+
+            logs.forEach(log => {
+               
+                const logDate = log.date.split(' ')[0]; // yyyy-mm-dd
+                if(logDate === today) todayCount++;
+                if(logDate.startsWith(currentMonth)) monthCount++;
+
+                let foundCrop = false;
+                if(log.query.includes("قمح")) { cropsCount["القمح"]++; foundCrop = true; }
+                if(log.query.includes("طماطم")) { cropsCount["الطماطم"]++; foundCrop = true; }
+                if(log.query.includes("موالح") || log.query.includes("برتقال")) { cropsCount["الموالح"]++; foundCrop = true; }
+                if(!foundCrop) cropsCount["أخرى"]++;
+
+                
+                const tr = document.createElement('tr');
+                
+                const shortReply = log.reply.length > 100 ? log.reply.substring(0, 100) + '...' : log.reply;
+                
+                tr.innerHTML = `
+                    <td class="date">${log.date}</td>
+                    <td>${log.query}</td>
+                    <td style="color: #94A3B8;">${shortReply}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+         
+            document.getElementById('kpi-total').innerText = logs.length;
+            document.getElementById('kpi-today').innerText = todayCount;
+            document.getElementById('kpi-month').innerText = monthCount;
+
+          
+            drawChart(cropsCount);
+
+        } catch (error) {
+            console.error('Error fetching logs:', error);
+        }
+    }
+
+    function drawChart(cropsCount) {
+        const ctx = document.getElementById('topicsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(cropsCount),
+                datasets: [{
+                    data: Object.values(cropsCount),
+                    backgroundColor: ['#00FF88', '#FF3366', '#00D2FF', '#B088FF'],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#E2E8F0', padding: 20 } }
+                },
+                cutout: '70%'
+            }
+        });
+    }
+
+  
+    fetchAnalytics();
+</script>
+</body>
+</html>

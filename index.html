@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نماء | مركز القيادة الاستراتيجي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #050B14; --panel-bg: #0A1526; --border-color: #1A2C4D;
+            --accent-green: #00FF88; --accent-blue: #00D2FF;
+            --text-main: #E2E8F0; --text-muted: #64748B;
+        }
+
+        body { font-family: 'Tajawal', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; padding: 20px; background-image: radial-gradient(circle at 50% 0%, rgba(0, 255, 136, 0.05), transparent 50%); }
+        .container { max-width: 1440px; margin: 0 auto; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 30px; }
+        header h1 { margin: 0; font-weight: 900; letter-spacing: 1px; }
+        header h1 span { color: var(--accent-green); }
+        .pulse { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 10px var(--accent-green); animation: pulse-animation 1.5s infinite; margin-right: 10px; }
+        @keyframes pulse-animation { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        .dashboard-grid { display: grid; grid-template-columns: 300px 1fr 350px; gap: 20px; }
+        .panel { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; position: relative; overflow: hidden; }
+        .panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--border-color), transparent); }
+        .panel-title { color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; margin-bottom: 20px; font-weight: 700; letter-spacing: 1px; }
+
+        .control-row { margin-bottom: 25px; }
+        .control-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.95rem; }
+        .val-highlight { color: var(--accent-green); font-weight: bold; font-size: 1.2rem; }
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 15px; width: 15px; border-radius: 50%; background: var(--accent-blue); cursor: pointer; margin-top: -6px; box-shadow: 0 0 10px var(--accent-blue); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 3px; background: var(--border-color); }
+
+        .terminal { background: #02060D; border: 1px solid var(--border-color); border-radius: 6px; padding: 15px; font-family: monospace; font-size: 0.8rem; color: #33FF00; height: 150px; overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-end; }
+        .log-line { margin: 3px 0; opacity: 0.8; }
+
+        textarea { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: white; padding: 15px; border-radius: 8px; font-family: inherit; resize: vertical; margin-bottom: 15px; box-sizing: border-box; }
+        textarea:focus { outline: none; border-color: var(--accent-green); }
+
+        .btn-core { width: 100%; background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 15px; font-family: inherit; font-weight: bold; font-size: 1.1rem; border-radius: 8px; cursor: pointer; transition: 0.3s; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-core:hover { background: rgba(0, 255, 136, 0.1); box-shadow: 0 0 20px rgba(0,255,136,0.2); }
+
+        .loader { display: none; width: 100%; height: 2px; background: var(--border-color); position: relative; overflow: hidden; margin-top: 20px;}
+        .loader::after { content: ''; position: absolute; left: -50%; width: 50%; height: 100%; background: var(--accent-green); animation: loadLine 1s linear infinite; }
+        @keyframes loadLine { 100% { left: 100%; } }
+
+        .gauge-container { display: flex; justify-content: space-around; margin-bottom: 20px; }
+        .gauge-wrapper { width: 120px; position: relative; text-align: center; }
+        .gauge-value { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -10%); font-weight: bold; font-size: 1.2rem; }
+        .gauge-label { font-size: 0.8rem; color: var(--text-muted); margin-top: -15px; }
+
+        
+        #report-box { display: none; margin-top: 25px; border-top: 1px dashed var(--border-color); padding-top: 20px; }
+        .report-header { display: flex; align-items: center; gap: 10px; color: var(--accent-blue); margin-bottom: 15px; }
+        #reportContent { max-height: 250px; overflow-y: auto; padding-right: 10px; line-height: 1.8; font-size: 0.95rem; color: #cbd5e1; }
+        #reportContent::-webkit-scrollbar { width: 6px; }
+        #reportContent::-webkit-scrollbar-track { background: var(--panel-bg); }
+        #reportContent::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+        #reportContent::-webkit-scrollbar-thumb:hover { background: var(--accent-green); }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div>
+            <h1>منصة <span>نماء</span></h1>
+            <div style="color: var(--text-muted); font-size: 0.9rem; margin-top: 5px; letter-spacing: 2px;">N A M A A . C O R E . S Y S T E M S</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 15px;">
+            <div style="display: flex; align-items: center; font-size: 0.85rem; color: var(--accent-green);">
+                <div class="pulse"></div> الإتصال مشفر وآمن (RAG API: ACTIVE)
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <a href="/missing-data" style="color: #FF3366; text-decoration: none; border: 1px solid #FF3366; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; transition: 0.3s; background: rgba(255, 51, 102, 0.05);">⚠️ الفجوات المعرفية</a>
+                <a href="/analytics" style="color: var(--accent-blue); text-decoration: none; border: 1px solid var(--accent-blue); padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; transition: 0.3s; background: rgba(0, 212, 255, 0.05);">📊 مركز التحليلات ➡</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard-grid">
+        <div class="panel">
+            <div class="panel-title">وحدة محاكاة المتغيرات</div>
+            <div class="control-row">
+                <div class="control-header"><span>درجة الحرارة (مئوية)</span> <span class="val-highlight" id="tempText">38°C</span></div>
+                <input type="range" id="tempSlider" min="5" max="50" value="38" oninput="updateDashboard()">
+            </div>
+            <div class="control-row">
+                <div class="control-header"><span>مستوى الرطوبة الجوية</span> <span class="val-highlight" id="humText" style="color: var(--accent-blue);">60%</span></div>
+                <input type="range" id="humSlider" min="10" max="100" value="60" oninput="updateDashboard()">
+            </div>
+            <div class="panel-title" style="margin-top: 40px;">سجلات النظام (Live Data)</div>
+            <div class="terminal" id="terminal">
+                <div class="log-line">> System initialized...</div>
+                <div class="log-line">> Loading RAG Vectors: SUCCESS</div>
+            </div>
+        </div>
+
+        <div class="panel" style="display: flex; flex-direction: column;">
+            <div class="panel-title">التحليل الديناميكي للطقس</div>
+            <div class="gauge-container">
+                <div class="gauge-wrapper"><canvas id="gauge1"></canvas><div class="gauge-value" id="g1-val">60%</div><div class="gauge-label">تشبع الهواء</div></div>
+                <div class="gauge-wrapper"><canvas id="gauge2"></canvas><div class="gauge-value" id="g2-val">HIGH</div><div class="gauge-label">مؤشر الإجهاد</div></div>
+            </div>
+            <div style="flex-grow: 1; position: relative;"><canvas id="mainChart"></canvas></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">محرك اتخاذ القرار (AI Core)</div>
+            <textarea id="aiQuery" rows="5" placeholder="أدخل الاستعلام الفني... (مثال: ما هي التوصيات المعتمدة للقمح في هذه الظروف؟)"></textarea>
+            <button class="btn-core" onclick="generateReport()">إصدار التقرير الاستراتيجي</button>
+            <div class="loader" id="aiLoader"></div>
+            <div id="report-box">
+                <div class="report-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <span style="font-weight: bold; font-size: 0.9rem;">تقرير موثق من المستندات</span>
+                </div>
+                <div id="reportContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    Chart.defaults.color = '#64748B'; Chart.defaults.font.family = 'Tajawal';
+    const ctxMain = document.getElementById('mainChart').getContext('2d');
+    const mainChart = new Chart(ctxMain, {
+        type: 'line',
+        data: {
+            labels: ['الفجر', 'الصباح', 'الظهيرة', 'العصر', 'الليل'],
+            datasets: [
+                { label: 'الحرارة', data: [20, 25, 38, 30, 22], borderColor: '#00FF88', backgroundColor: 'rgba(0, 255, 136, 0.1)', yAxisID: 'y', fill: true, tension: 0.4, borderWidth: 2 },
+                { label: 'الرطوبة', data: [80, 70, 60, 65, 75], borderColor: '#00D2FF', borderDash: [5, 5], yAxisID: 'y1', tension: 0.4, borderWidth: 2 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, scales: { y: { type: 'linear', position: 'right', grid: { color: '#1A2C4D' } }, y1: { type: 'linear', position: 'left', grid: { display: false } }, x: { grid: { display: false } } } }
+    });
+
+    const gaugeOptions = { rotation: 270, circumference: 180, cutout: '80%', plugins: { tooltip: { enabled: false }, legend: { display: false } } };
+    const gauge1 = new Chart(document.getElementById('gauge1'), { type: 'doughnut', data: { datasets: [{ data: [60, 40], backgroundColor: ['#00D2FF', '#1A2C4D'], borderWidth: 0 }] }, options: gaugeOptions });
+    const gauge2 = new Chart(document.getElementById('gauge2'), { type: 'doughnut', data: { datasets: [{ data: [75, 25], backgroundColor: ['#FF3366', '#1A2C4D'], borderWidth: 0 }] }, options: gaugeOptions });
+
+    function updateDashboard() {
+        const temp = parseInt(document.getElementById('tempSlider').value);
+        const hum = parseInt(document.getElementById('humSlider').value);
+        document.getElementById('tempText').innerText = temp + '°C';
+        document.getElementById('humText').innerText = hum + '%';
+
+        mainChart.data.datasets[0].data = [temp-15, temp-5, temp, temp-8, temp-12]; 
+        mainChart.data.datasets[1].data = [hum+20, hum+10, hum, hum+5, hum+15]; 
+        mainChart.update();
+        
+        gauge1.data.datasets[0].data = [hum, 100-hum]; gauge1.update(); document.getElementById('g1-val').innerText = hum + '%';
+        let stress = (temp / 50) * 100;
+        let stressColor = stress > 70 ? '#FF3366' : (stress > 40 ? '#FFAA00' : '#00FF88');
+        let stressText = stress > 70 ? 'خطر' : (stress > 40 ? 'متوسط' : 'طبيعي');
+        gauge2.data.datasets[0].data = [stress, 100-stress]; gauge2.data.datasets[0].backgroundColor[0] = stressColor; gauge2.update(); document.getElementById('g2-val').innerText = stressText; document.getElementById('g2-val').style.color = stressColor;
+        addLog(`> Parameters adjusted: T:${temp}C, H:${hum}%`);
+    }
+
+    function addLog(msg) {
+        const term = document.getElementById('terminal');
+        term.innerHTML += `<div class="log-line">${msg}</div>`;
+        term.scrollTop = term.scrollHeight;
+    }
+
+    async function generateReport() {
+        const temp = document.getElementById('tempSlider').value;
+        const hum = document.getElementById('humSlider').value;
+        const query = document.getElementById('aiQuery').value;
+        
+        addLog("> Compiling environmental data...");
+        addLog("> Requesting strategic analysis from RAG engine...");
+        
+        document.getElementById('aiLoader').style.display = 'block';
+        document.getElementById('report-box').style.display = 'none';
+
+        try {
+            const response = await fetch('/get_advice', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ condition: `الحرارة: ${temp}. الرطوبة: ${hum}. ${query}` })
+            });
+            const data = await response.json();
+            
+            let formattedData = data.advice.replace(/\*\*(.*?)\*\*/g, '<b style="color:var(--text-main)">$1</b>');
+            formattedData = formattedData.replace(/\n/g, '<br>');
+
+           
+            if(data.advice.includes("عذراً") || data.advice.includes("لا توجد بيانات")) {
+                formattedData = `<span style="color:#FF3366;">⚠️ ${formattedData}</span>`;
+            }
+
+            document.getElementById('reportContent').innerHTML = formattedData;
+            document.getElementById('aiLoader').style.display = 'none';
+            document.getElementById('report-box').style.display = 'block';
+            addLog("> Analysis received successfully.");
+        } catch (error) {
+            document.getElementById('aiLoader').style.display = 'none';
+            addLog("<span style='color:red;'>> ERROR: Connection failed.</span>");
+            alert('الخادم غير متصل!');
+        }
+    }
+</script>
+</body>
+</html>
