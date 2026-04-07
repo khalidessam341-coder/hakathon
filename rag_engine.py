@@ -1,6 +1,6 @@
 import os
 from PyPDF2 import PdfReader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -8,7 +8,9 @@ from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 
 
-os.environ["GOOGLE_API_KEY"] = "AIzaSyBQFspR1Jvb0qrX7caoAWt-jB2mE5_X2bU"
+if "GOOGLE_API_KEY" not in os.environ:
+    print("⚠️ تحذير: مفتاح GOOGLE_API_KEY غير موجود في البيئة!")
+
 
 memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
@@ -31,7 +33,8 @@ def process_pdfs(pdf_folder):
     return vector_store
 
 def get_agricultural_advice(weather_condition, vector_store):
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.3)
+  
+    llm = ChatGoogleGenerativeAI(model="gemini-flash-latest", temperature=0.3)
     
     qa_chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
@@ -39,7 +42,6 @@ def get_agricultural_advice(weather_condition, vector_store):
         memory=memory
     )
     
-   
     prompt = f"""
     أنت الآن "خبير زراعي رقمي" لمنصة نماء.
     المعطيات: طقس ({weather_condition}) + مستندات مرفقة.
