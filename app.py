@@ -8,6 +8,9 @@ from rag_engine import process_pdfs, get_agricultural_advice
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 
+
+os.environ["GOOGLE_API_KEY"] = "AIzaSyC8j0QFoQLueIYC3b_mKdiqJsdA_u1pwYQ" 
+
 app = FastAPI()
 
 class WeatherData(BaseModel):
@@ -76,11 +79,16 @@ def get_unanswered_logs():
 def advice_endpoint(data: WeatherData):
     raw_advice = get_agricultural_advice(data.condition, vector_db)
     
+  
     if "[NOT_IN_DOC]" in raw_advice:
+       
         log_unanswered(data.condition)
+       
         clean_advice = raw_advice.replace("[NOT_IN_DOC]", "").strip()
+       
         log_to_csv(data.condition, clean_advice)
         return {"advice": clean_advice}
     else:
+      
         log_to_csv(data.condition, raw_advice)
         return {"advice": raw_advice}
